@@ -5,7 +5,7 @@ import time
 from flask import Flask
 from threading import Thread
 
-# --- Flask Server for 24/7 Hosting ---
+# --- Render-এ বটকে জাগিয়ে রাখার জন্য Flask সার্ভার ---
 app = Flask('')
 
 @app.route('/')
@@ -18,43 +18,41 @@ def run():
 def keep_alive():
     t = Thread(target=run)
     t.start()
+# ------------------------------------------------
 
-# --- Configuration ---
+# ১. আপনার তথ্য আপডেট করা হয়েছে
 BOT_TOKEN = "8458877465:AAEZoRhw9O9X1Xv6Ivlc__sBmvPhUniSKbc"
-GEMINI_API_KEY = "AIzaSyCMnYK3IQXWLtx2orTb9sb2zP6xAnkqndI"
+GEMINI_API_KEY = "AIzaSyDWiVbtYqeuxGW8ZnWIHN73qd17AIcL3eM" # নতুন কি এখানে বসানো হয়েছে
 ADMIN_ID = 7468233796 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 BANNER_URL = "https://i.ibb.co/vzVfVfV/islamic-cyber-banner.jpg"
 
 def ask_gemini(user_text):
-    # Try both v1 and v1beta for maximum compatibility
-    endpoints = [
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}",
-        f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    ]
+    # গুগলের লেটেস্ট এন্ডপয়েন্ট ব্যবহার করা হয়েছে
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {'Content-Type': 'application/json'}
     
     system_instruction = (
-        "You are 'An-Noor Sentinel', an Advanced Islamic AI Scholar. "
-        "Answer strictly in Bangla using Quran and Sahih Hadith."
+        "You are An-Noor Sentinel, an Advanced Islamic AI Scholar. "
+        "Provide authentic knowledge based on Quran & Sahih Hadith in Bangla."
     )
 
     payload = {
         "contents": [{"parts": [{"text": f"{system_instruction}\n\nUser: {user_text}"}]}]
     }
 
-    for url in endpoints:
-        try:
-            response = requests.post(url, json=payload, timeout=20)
-            data = response.json()
-            if 'candidates' in data:
-                return data['candidates'][0]['content']['parts'][0]['text']
-        except:
-            continue
-            
-    return "⚠️ দুঃখিত, আমার ইসলামিক নলেজ ডাটাবেস এই মুহূর্তে সাড়া দিচ্ছে না। অনুগ্রহ করে ৫ মিনিট পর আবার চেষ্টা করুন।"
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        data = response.json()
+        if 'candidates' in data:
+            return data['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return "⚠️ গুগল সার্ভার থেকে কোনো তথ্য পাওয়া যায়নি। কি-টি আবার চেক করুন।"
+    except:
+        return "⚠️ বর্তমানে সার্ভার ব্যস্ত। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।"
 
-# --- Menu ---
+# কিবোর্ড মেনু
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add("🕌 নামাজ শিক্ষা (A-Z)", "🚿 ওযু ও পবিত্রতা", "🌙 সাহাবীদের বীরত্ব", "📜 কুরআন ও হাদিস", "⚖️ হালাল-হারাম বিধান", "🤲 দৈনন্দিন দোয়া", "🔗 বট শেয়ার করুন")
@@ -79,6 +77,6 @@ def handle(message):
     bot.reply_to(message, reply)
 
 if __name__ == "__main__":
-    keep_alive()
+    keep_alive() 
     print("Bot is Alive...")
     bot.infinity_polling()
