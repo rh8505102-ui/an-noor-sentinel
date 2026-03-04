@@ -20,21 +20,23 @@ def keep_alive():
     t.start()
 # ------------------------------------------------
 
-# ১. আপনার তথ্য (বট টোকেন ও এপিআই কি)
+# ১. আপনার নতুন তথ্য
 BOT_TOKEN = "8458877465:AAEZoRhw9O9X1Xv6Ivlc__sBmvPhUniSKbc"
-GEMINI_API_KEY = "AIzaSyDu2Fdieybyr-LDAcE-2miO_q1xgAEiFak"
+GEMINI_API_KEY = "AIzaSyCMnYK3IQXWLtx2orTb9sb2zP6xAnkqndI" # আপনার নতুন কি এখানে বসানো হয়েছে
 ADMIN_ID = 7468233796 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 BANNER_URL = "https://i.ibb.co/vzVfVfV/islamic-cyber-banner.jpg"
 
 def ask_gemini(user_text):
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    # v1beta ব্যবহার করা হয়েছে দ্রুত রেসপন্সের জন্য
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     
     system_instruction = (
-        "You are an Advanced Islamic AI Scholar. Provide authentic knowledge "
-        "based on Quran & Sahih Hadith in Bangla."
+        "You are an Advanced Islamic AI Scholar named 'An-Noor Sentinel'. "
+        "Provide authentic knowledge based on Quran & Sahih Hadith in Bangla. "
+        "Keep answers concise and clear."
     )
 
     payload = {
@@ -45,7 +47,8 @@ def ask_gemini(user_text):
         response = requests.post(url, json=payload, timeout=30)
         data = response.json()
         return data['candidates'][0]['content']['parts'][0]['text']
-    except:
+    except Exception as e:
+        print(f"Error: {e}")
         return "⚠️ বর্তমানে সার্ভার ব্যস্ত। অনুগ্রহ করে ইস্তিগফার পড়ুন এবং কিছুক্ষণ পর চেষ্টা করুন।"
 
 # কিবোর্ড মেনু
@@ -80,8 +83,7 @@ def handle(message):
     else:
         bot.reply_to(message, reply)
 
-# মেইন ফাংশন
 if __name__ == "__main__":
-    keep_alive() # Flask সার্ভার চালু হবে
+    keep_alive() 
     print("Bot is Alive and Hosting...")
-    bot.infinity_polling() # বট কমান্ড শোনা শুরু করবে
+    bot.infinity_polling()
