@@ -5,7 +5,7 @@ import time
 from flask import Flask
 from threading import Thread
 
-# --- Render-এ বটকে জাগিয়ে রাখার জন্য Flask সার্ভার ---
+# --- Flask Server for 24/7 Hosting ---
 app = Flask('')
 
 @app.route('/')
@@ -18,54 +18,55 @@ def run():
 def keep_alive():
     t = Thread(target=run)
     t.start()
-# ------------------------------------------------
 
-# ১. আপনার নতুন তথ্য
+# --- Configuration ---
 BOT_TOKEN = "8458877465:AAEZoRhw9O9X1Xv6Ivlc__sBmvPhUniSKbc"
-GEMINI_API_KEY = "AIzaSyCMnYK3IQXWLtx2orTb9sb2zP6xAnkqndI" # আপনার নতুন কি এখানে বসানো হয়েছে
+GEMINI_API_KEY = "AIzaSyCMnYK3IQXWLtx2orTb9sb2zP6xAnkqndI"
 ADMIN_ID = 7468233796 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 BANNER_URL = "https://i.ibb.co/vzVfVfV/islamic-cyber-banner.jpg"
 
 def ask_gemini(user_text):
-    # v1beta ব্যবহার করা হয়েছে দ্রুত রেসপন্সের জন্য
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    headers = {'Content-Type': 'application/json'}
+    # Try both v1 and v1beta for maximum compatibility
+    endpoints = [
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}",
+        f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    ]
     
     system_instruction = (
-        "You are an Advanced Islamic AI Scholar named 'An-Noor Sentinel'. "
-        "Provide authentic knowledge based on Quran & Sahih Hadith in Bangla. "
-        "Keep answers concise and clear."
+        "You are 'An-Noor Sentinel', an Advanced Islamic AI Scholar. "
+        "Answer strictly in Bangla using Quran and Sahih Hadith."
     )
 
     payload = {
         "contents": [{"parts": [{"text": f"{system_instruction}\n\nUser: {user_text}"}]}]
     }
 
-    try:
-        response = requests.post(url, json=payload, timeout=30)
-        data = response.json()
-        return data['candidates'][0]['content']['parts'][0]['text']
-    except Exception as e:
-        print(f"Error: {e}")
-        return "⚠️ বর্তমানে সার্ভার ব্যস্ত। অনুগ্রহ করে ইস্তিগফার পড়ুন এবং কিছুক্ষণ পর চেষ্টা করুন।"
+    for url in endpoints:
+        try:
+            response = requests.post(url, json=payload, timeout=20)
+            data = response.json()
+            if 'candidates' in data:
+                return data['candidates'][0]['content']['parts'][0]['text']
+        except:
+            continue
+            
+    return "⚠️ দুঃখিত, আমার ইসলামিক নলেজ ডাটাবেস এই মুহূর্তে সাড়া দিচ্ছে না। অনুগ্রহ করে ৫ মিনিট পর আবার চেষ্টা করুন।"
 
-# কিবোর্ড মেনু
-def main_menu(user_id):
+# --- Menu ---
+def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add("🕌 নামাজ শিক্ষা (A-Z)", "🚿 ওযু ও পবিত্রতা", "🌙 সাহাবীদের বীরত্ব", "📜 কুরআন ও হাদিস", "⚖️ হালাল-হারাম বিধান", "🤲 দৈনন্দিন দোয়া", "🔗 বট শেয়ার করুন")
-    if user_id == ADMIN_ID:
-        markup.add("⚡ অ্যাডমিন প্যানেল")
     return markup
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    welcome_msg = "আসসালামু আলাইকুম! আমি **An-Noor Sentinel**। আপনার ইসলামিক জিজ্ঞাসার সমাধানে আমি প্রস্তুত।"
+    welcome_msg = "আসসালামু আলাইকুম! আমি **An-Noor Sentinel**। আপনার দ্বীনি জিজ্ঞাসার সমাধানে আমি প্রস্তুত।"
     try:
-        bot.send_photo(message.chat.id, BANNER_URL, caption=welcome_msg, reply_markup=main_menu(message.from_user.id))
+        bot.send_photo(message.chat.id, BANNER_URL, caption=welcome_msg, reply_markup=main_menu())
     except:
-        bot.send_message(message.chat.id, welcome_msg, reply_markup=main_menu(message.from_user.id))
+        bot.send_message(message.chat.id, welcome_msg, reply_markup=main_menu())
 
 @bot.message_handler(func=lambda m: True)
 def handle(message):
@@ -75,15 +76,9 @@ def handle(message):
     
     bot.send_chat_action(message.chat.id, "typing")
     reply = ask_gemini(message.text)
-    
-    if len(reply) > 4000:
-        for i in range(0, len(reply), 4000):
-            bot.send_message(message.chat.id, reply[i:i+4000])
-            time.sleep(1)
-    else:
-        bot.reply_to(message, reply)
+    bot.reply_to(message, reply)
 
 if __name__ == "__main__":
-    keep_alive() 
-    print("Bot is Alive and Hosting...")
+    keep_alive()
+    print("Bot is Alive...")
     bot.infinity_polling()
