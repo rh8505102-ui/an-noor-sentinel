@@ -2,6 +2,7 @@ import telebot
 import requests
 from telebot import types
 import time
+import os
 from flask import Flask
 from threading import Thread
 
@@ -20,16 +21,15 @@ def keep_alive():
     t.start()
 # ------------------------------------------------
 
-# ১. আপনার তথ্য আপডেট করা হয়েছে
+# ১. কনফিগারেশন (সরাসরি Render থেকে API Key পড়ার জন্য os.environ ব্যবহার করা হয়েছে)
 BOT_TOKEN = "8458877465:AAEZoRhw9O9X1Xv6Ivlc__sBmvPhUniSKbc"
-GEMINI_API_KEY = "AIzaSyDWiVbtYqeuxGW8ZnWIHN73qd17AIcL3eM" # নতুন কি এখানে বসানো হয়েছে
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") 
 ADMIN_ID = 7468233796 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
 BANNER_URL = "https://i.ibb.co/vzVfVfV/islamic-cyber-banner.jpg"
 
 def ask_gemini(user_text):
-    # গুগলের লেটেস্ট এন্ডপয়েন্ট ব্যবহার করা হয়েছে
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     
@@ -48,7 +48,7 @@ def ask_gemini(user_text):
         if 'candidates' in data:
             return data['candidates'][0]['content']['parts'][0]['text']
         else:
-            return "⚠️ গুগল সার্ভার থেকে কোনো তথ্য পাওয়া যায়নি। কি-টি আবার চেক করুন।"
+            return "⚠️ গুগল সার্ভার থেকে তথ্য পাওয়া যাচ্ছে না। আপনার API Key টি চেক করুন।"
     except:
         return "⚠️ বর্তমানে সার্ভার ব্যস্ত। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।"
 
